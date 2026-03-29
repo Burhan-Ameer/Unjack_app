@@ -40,7 +40,7 @@ export default function SettingsScreen() {
   const [appsLoading, setAppsLoading] = useState<boolean>(true);
 
   // Load installed apps and blocked apps
-  useEffect(() => {``
+  useEffect(() => {
     // Only run on Android
     if (Platform.OS !== 'android') return;
     // Load installed apps
@@ -292,41 +292,10 @@ export default function SettingsScreen() {
                 </View>
               ) : (
                 (() => {
-                  // Filter user apps - exclude system apps or very common system packages
-                  const systemPackages = new Set([
-                    'android',
-                    'com.android',
-                    'com.google.android',
-                    'com.sec',
-                    'android.com',
-                  ]);
-                  
-                  const isSystemPackage = (pkg: string) => 
-                    systemPackages.has(pkg) || 
-                    systemPackages.has(pkg.split('.').slice(0, 2).join('.'));
-
+                  // Filter user apps only
                   const userApps = installedApps.filter(
-                    app => {
-                      const pkg = app.info?.CFBundleIdentifier || app.app || '';
-                      // Show non-system apps or apps that don't have system identifiers
-                      return !app.system && !app.isSystemApp && !isSystemPackage(pkg);
-                    },
+                    app => !app.system && !app.isSystemApp,
                   );
-                  
-                  // Debug: Log all apps and filtered apps
-                  console.log('Total installed apps:', installedApps.length);
-                  console.log('All apps:', installedApps.map(app => ({
-                    name: app.info?.CFBundleDisplayName || app.app,
-                    packageName: app.info?.CFBundleIdentifier || app.app,
-                    system: app.system,
-                    isSystemApp: app.isSystemApp,
-                  })));
-                  console.log('Filtered user apps:', userApps.length);
-                  console.log('Filtered apps:', userApps.map(app => ({
-                    name: app.info?.CFBundleDisplayName || app.app,
-                    packageName: app.info?.CFBundleIdentifier || app.app,
-                  })));
-                  
                   if (!userApps.length) {
                     return (
                       <Text

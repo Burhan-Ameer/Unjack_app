@@ -8,6 +8,9 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" 
         tools:ignore="ProtectedPermissions" />
     
+    <!-- Required on Android 11+ to query installed apps -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    
     <!-- Foreground Service permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -16,6 +19,14 @@
     
     <!-- For receiving boot completed to restart service -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Package visibility declarations for launcher apps -->
+    <queries>
+      <intent>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent>
+    </queries>
 
     <application
       android:name=".MainApplication"
