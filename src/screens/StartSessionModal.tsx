@@ -11,7 +11,6 @@ import { X, Zap, Clock } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
-import { schedules } from '../mock/data';
 import { useSession } from '../contexts/SessionContext';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -27,7 +26,7 @@ const DURATION_PRESETS = [
 
 export default function StartSessionModal() {
   const navigation = useNavigation<Nav>();
-  const { startSession } = useSession();
+  const { startSession, schedules } = useSession();
   const [selectedDuration, setSelectedDuration] = useState(25);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(
     null,

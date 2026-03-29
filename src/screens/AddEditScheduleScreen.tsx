@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, SafeAreaView,
-  TouchableOpacity, TextInput, StyleSheet, Switch, Platform,
+  TouchableOpacity, TextInput, StyleSheet, Switch, Platform, ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { ArrowLeft, Clock, Trash2, Check } from 'lucide-react-native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { ArrowLeft, Trash2, Check } from 'lucide-react-native';
 import { RootStackParamList } from '../navigation/AppNavigator';
-import { schedules, blockedApps } from '../mock/data';
+import { blockedApps } from '../mock/data';
+import Accessibility from '../native/AccessibilityModule';
+import { useSession } from '../contexts/SessionContext';
 
 type RouteT = RouteProp<RootStackParamList, 'AddEditSchedule'>;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+type NormalizedApp = {
+  id: string;
+  name: string;
+  packageName: string;
+};
 
 const ALL_DAYS = [
   { label: 'M', value: 1 },
@@ -56,19 +66,65 @@ function TimePicker({ label, value, onChange }: { label: string; value: string; 
 }
 
 export default function AddEditScheduleScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
   const route = useRoute<RouteT>();
+  const { schedules, upsertSchedule, deleteSchedule } = useSession();
   const scheduleId = route.params?.scheduleId;
 
   const existing = scheduleId ? schedules.find(s => s.id === scheduleId) : null;
   const isEditing = !!existing;
+
+  const [installedApps, setInstalledApps] = useState<any[]>([]);
+  const [appsLoading, setAppsLoading] = useState<boolean>(Platform.OS === 'android');
 
   const [name, setName] = useState(existing?.name ?? '');
   const [startTime, setStartTime] = useState(existing?.startTime ?? '09:00');
   const [endTime, setEndTime] = useState(existing?.endTime ?? '17:00');
   const [selectedDays, setSelectedDays] = useState<number[]>(existing?.days ?? [1, 2, 3, 4, 5]);
   const [isActive, setIsActive] = useState(existing?.isActive ?? true);
-  const [selectedApps, setSelectedApps] = useState<string[]>(existing?.appIds ?? []);
+  const [selectedApps, setSelectedApps] = useState<string[]>(
+    (existing?.appIds ?? []).map(id => blockedApps.find(a => a.id === id)?.packageName ?? id),
+  );
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      setAppsLoading(false);
+      return;
+    }
+
+    Accessibility.getInstalledApps()
+      .then((apps: any[]) => {
+        setInstalledApps(
+          apps.sort((a, b) =>
+            (a.info?.CFBundleIdentifier ?? a.app).localeCompare(
+              b.info?.CFBundleIdentifier ?? b.app,
+            ),
+          ),
+        );
+        setAppsLoading(false);
+      })
+      .catch(() => {
+        setAppsLoading(false);
+      });
+  }, []);
+
+  const availableApps = useMemo<NormalizedApp[]>(() => {
+    if (Platform.OS === 'android') {
+      return installedApps
+        .filter(app => !app.system && !app.isSystemApp)
+        .map(app => ({
+          id: app.info?.CFBundleIdentifier ?? app.app,
+          name: app.info?.CFBundleDisplayName ?? app.name ?? app.app,
+          packageName: app.info?.CFBundleIdentifier ?? app.app,
+        }));
+    }
+
+    return blockedApps.map(app => ({
+      id: app.packageName,
+      name: app.name,
+      packageName: app.packageName,
+    }));
+  }, [installedApps]);
 
   const toggleDay = (day: number) => {
     setSelectedDays(prev =>
@@ -76,18 +132,32 @@ export default function AddEditScheduleScreen() {
     );
   };
 
-  const toggleApp = (id: string) => {
+  const toggleApp = (packageName: string) => {
     setSelectedApps(prev =>
-      prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
+      prev.includes(packageName)
+        ? prev.filter(a => a !== packageName)
+        : [...prev, packageName]
     );
   };
 
   const handleSave = () => {
-    // In a real app: persist to state/API
+    const trimmedName = name.trim();
+    upsertSchedule({
+      id: existing?.id ?? Date.now().toString(),
+      name: trimmedName || 'Focus Schedule',
+      startTime,
+      endTime,
+      days: selectedDays,
+      isActive,
+      appIds: selectedApps,
+    });
     navigation.goBack();
   };
 
   const handleDelete = () => {
+    if (existing) {
+      deleteSchedule(existing.id);
+    }
     navigation.goBack();
   };
 
@@ -161,27 +231,34 @@ export default function AddEditScheduleScreen() {
         <Text style={styles.fieldLabel}>Block these apps</Text>
         <Text style={styles.fieldSub}>Apps that will be blocked during this schedule</Text>
         <View style={styles.appList}>
-          {blockedApps.map((app) => {
-            const selected = selectedApps.includes(app.id);
-            return (
-              <TouchableOpacity
-                key={app.id}
-                style={[styles.appRow, selected && styles.appRowSelected]}
-                onPress={() => toggleApp(app.id)}
-              >
-                <View style={[styles.appIcon, selected && styles.appIconSelected]}>
-                  <View style={styles.appIconInner} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.appName}>{app.name}</Text>
-                  <Text style={styles.appPackage}>{app.packageName}</Text>
-                </View>
-                <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-                  {selected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+          {appsLoading ? (
+            <View style={styles.loadingWrap}>
+              <ActivityIndicator size="small" color="#6366F1" />
+              <Text style={styles.loadingText}>Loading apps...</Text>
+            </View>
+          ) : (
+            availableApps.map((app) => {
+              const selected = selectedApps.includes(app.packageName);
+              return (
+                <TouchableOpacity
+                  key={app.id}
+                  style={[styles.appRow, selected && styles.appRowSelected]}
+                  onPress={() => toggleApp(app.packageName)}
+                >
+                  <View style={[styles.appIcon, selected && styles.appIconSelected]}>
+                    <View style={styles.appIconInner} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.appName}>{app.name}</Text>
+                    <Text style={styles.appPackage}>{app.packageName}</Text>
+                  </View>
+                  <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                    {selected && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
 
         {/* Delete (edit mode only) */}

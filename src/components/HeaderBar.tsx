@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import { Bell, Plus } from 'lucide-react-native';
 
 interface HeaderBarProps {
@@ -13,6 +20,7 @@ interface HeaderBarProps {
   /** @deprecated no-op, kept for backwards compat */
   showSettings?: boolean;
   onMenuPress?: () => void;
+  compactOnSmallScreen?: boolean;
 }
 
 export const HeaderBar: React.FC<HeaderBarProps> = ({
@@ -23,8 +31,12 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   onAvatarPress,
   onSettingsPress,
   onMenuPress,
+  compactOnSmallScreen = false,
 }) => {
   const handleBellPress = onNotificationsPress ?? onSettingsPress;
+  const { width } = useWindowDimensions();
+  const isCompact = compactOnSmallScreen && width < 390;
+  const addText = isCompact ? 'New' : addLabel;
 
   return (
     <View style={styles.container}>
@@ -33,15 +45,24 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         <View style={styles.logoMark}>
           <Text style={styles.logoText}>U</Text>
         </View>
-        <Text style={styles.appName}>Unplugged</Text>
+        {!isCompact && (
+          <Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">
+            Unplugged
+          </Text>
+        )}
       </TouchableOpacity>
 
       {/* Right actions */}
       <View style={styles.actions}>
         {showAdd && (
-          <TouchableOpacity onPress={onAdd} style={styles.addButton}>
+          <TouchableOpacity
+            onPress={onAdd}
+            style={[styles.addButton, isCompact && styles.addButtonCompact]}
+          >
             <Plus color="#111827" size={16} />
-            <Text style={styles.addLabel}>{addLabel}</Text>
+            <Text style={styles.addLabel} numberOfLines={1}>
+              {addText}
+            </Text>
           </TouchableOpacity>
         )}
 
@@ -74,6 +95,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    minWidth: 0,
+    flexShrink: 1,
   },
   logoMark: {
     width: 32,
@@ -98,6 +121,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 0,
   },
   addButton: {
     flexDirection: 'row',
@@ -109,6 +133,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 7,
+    maxWidth: 140,
+  },
+  addButtonCompact: {
+    paddingHorizontal: 10,
   },
   addLabel: {
     fontSize: 13,

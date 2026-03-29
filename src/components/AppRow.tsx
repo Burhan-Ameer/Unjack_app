@@ -31,9 +31,21 @@ export const AppRow: React.FC<AppRowProps> = ({
             <View style={[styles.iconPlaceholder, isBlocked && styles.iconPlaceholderActive]} />
           )}
         </View>
-        <View>
-          <Text style={[styles.name, isBlocked && styles.nameActive]}>{name}</Text>
-          <Text style={[styles.packageName, isBlocked && styles.packageNameActive]}>{packageName}</Text>
+        <View style={styles.textContainer}>
+          <Text
+            style={[styles.name, isBlocked && styles.nameActive]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {name}
+          </Text>
+          <Text
+            style={[styles.packageName, isBlocked && styles.packageNameActive]}
+            numberOfLines={1}
+            ellipsizeMode="middle"
+          >
+            {packageName}
+          </Text>
         </View>
       </View>
 
@@ -68,6 +80,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
+    minWidth: 0,
+  },
+  textContainer: {
+    flex: 1,
+    minWidth: 0,
   },
   iconContainer: {
     width: 46,
@@ -114,6 +132,8 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 24,
     height: 24,
+    marginLeft: 10,
+    flexShrink: 0,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#D1D5DB',

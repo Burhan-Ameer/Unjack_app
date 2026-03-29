@@ -3,12 +3,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import { View, StyleSheet } from 'react-native';
-import { Home, Calendar, Trophy, BarChart2, User } from 'lucide-react-native';
+import { Home, Trophy, BarChart2, User } from 'lucide-react-native';
 
 import { SessionProvider } from '../contexts/SessionContext';
 
 import HomeScreen from '../screens/HomeScreen';
-import ScheduleScreen from '../screens/ScheduleScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
 import StatsScreen from '../screens/StatsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -65,15 +64,6 @@ function MainTabs() {
         options={{
           tabBarIcon: ({ focused }) => (
             <TabBarIcon icon={Home} focused={focused} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Schedule"
-        component={ScheduleScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabBarIcon icon={Calendar} focused={focused} />
           ),
         }}
       />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppRow } from '../components/AppRow';
 import {
   View,
@@ -13,8 +13,6 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import BackgroundTimer from 'react-native-background-timer';
 import {
   ArrowLeft,
   Bell,
@@ -32,7 +30,7 @@ import { useSession } from '../contexts/SessionContext';
 
 export default function SettingsScreen() {
   // Get focus mode from context
-  const { focusMode, toggleFocusMode, setFocusBlockedApps, setFocusDailyGoal, setFocusWeeklyGoal } =
+  const { focusMode, toggleFocusMode, setFocusBlockedApps } =
     useSession();
 
   // Android blocked apps selector state
@@ -62,17 +60,6 @@ export default function SettingsScreen() {
   }, []);
 
   const navigation = useNavigation();
-
-  // Handle blocked apps enforcement during focus mode
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      if (focusMode.enabled && focusMode.blockedApps.length > 0) {
-        Accessibility.setBlockedApps(focusMode.blockedApps);
-      } else {
-        Accessibility.setBlockedApps([]);
-      }
-    }
-  }, [focusMode.enabled, focusMode.blockedApps]);
 
   // App settings state + toggles
   const [settings, setSettings] = useState(appSettings);
@@ -131,11 +118,6 @@ export default function SettingsScreen() {
     toggleFocusMode(newEnabled);
   };
 
-  const handleDailyGoalChange = (delta: number) =>
-    setFocusDailyGoal(focusMode.dailyGoalMinutes + delta);
-  const handleWeeklyGoalChange = (delta: number) =>
-    setFocusWeeklyGoal(focusMode.weeklyGoalMinutes + delta);
-
   return (
     <SafeAreaView style={styles.safe}>
       {/* Focus Timer Section */}
@@ -170,84 +152,6 @@ export default function SettingsScreen() {
             value={focusMode.enabled}
             onToggle={handleFocusModeToggle}
           />
-
-          <View style={{ borderTopWidth: 1, borderTopColor: '#F3F4F6', marginVertical: 12 }} />
-
-          <View style={{ marginBottom: 12 }}>
-            <Text
-              style={{
-                fontWeight: '600',
-                fontSize: 15,
-                color: '#111827',
-                marginBottom: 8,
-              }}
-            >
-              Daily Goal
-            </Text>
-            <View style={styles.stepperContainer}>
-              <TouchableOpacity
-                style={styles.stepperBtn}
-                onPress={() => handleDailyGoalChange(-5)}
-              >
-                <Text style={styles.stepperBtnText}>-</Text>
-              </TouchableOpacity>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: '700',
-                  color: '#374151',
-                  minWidth: 60,
-                  textAlign: 'center',
-                }}
-              >
-                {focusMode.dailyGoalMinutes} min
-              </Text>
-              <TouchableOpacity
-                style={styles.stepperBtn}
-                onPress={() => handleDailyGoalChange(5)}
-              >
-                <Text style={styles.stepperBtnText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={{ marginBottom: 16 }}>
-            <Text
-              style={{
-                fontWeight: '600',
-                fontSize: 15,
-                color: '#111827',
-                marginBottom: 8,
-              }}
-            >
-              Weekly Goal
-            </Text>
-            <View style={styles.stepperContainer}>
-              <TouchableOpacity
-                style={styles.stepperBtn}
-                onPress={() => handleWeeklyGoalChange(-15)}
-              >
-                <Text style={styles.stepperBtnText}>-</Text>
-              </TouchableOpacity>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: '700',
-                  color: '#374151',
-                  minWidth: 60,
-                  textAlign: 'center',
-                }}
-              >
-                {focusMode.weeklyGoalMinutes} min
-              </Text>
-              <TouchableOpacity
-                style={styles.stepperBtn}
-                onPress={() => handleWeeklyGoalChange(15)}
-              >
-                <Text style={styles.stepperBtnText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
 
           <TouchableOpacity
             style={[
@@ -564,27 +468,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 12,
-  },
-  stepperBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  stepperBtnText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#374151',
-  },
-  stepperContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    marginVertical: 8,
   },
   timerBtn: {
     flexDirection: 'row',
