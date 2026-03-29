@@ -25,9 +25,9 @@ const AppUsageRow = ({ name, timeBlocked, progress, isLast }: any) => (
       <View style={styles.appIconContainer}>
         <View style={styles.appIconPlaceholder} />
       </View>
-      <View>
-        <Text style={styles.appName}>{name}</Text>
-        <Text style={styles.appTime}>{timeBlocked}</Text>
+      <View style={styles.appInfoColumn}>
+        <Text style={styles.appName} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+        <Text style={styles.appTime} numberOfLines={1}>{timeBlocked}</Text>
       </View>
     </View>
     <SegmentedProgress total={6} filled={Math.floor(progress * 6)} size={28} />
@@ -285,6 +285,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
+    minWidth: 0,
+  },
+  appInfoColumn: {
+    flex: 1,
+    minWidth: 0,
   },
   appIconContainer: {
     width: 42,

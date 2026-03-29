@@ -1,6 +1,21 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Internet permission -->
     <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- Usage Stats permission (for detecting foreground app) -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" 
+        tools:ignore="ProtectedPermissions" />
+    
+    <!-- Foreground Service permissions -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
+    <!-- For receiving boot completed to restart service -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
       android:name=".MainApplication"
@@ -11,6 +26,7 @@
       android:theme="@style/AppTheme"
       android:usesCleartextTraffic="${usesCleartextTraffic}"
       android:supportsRtl="true">
+      
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"
@@ -23,5 +39,31 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+
+      <!-- Foreground Service for background monitoring -->
+      <service
+        android:name=".ForegroundService"
+        android:enabled="true"
+        android:exported="false"
+        android:foregroundServiceType="specialUse">
+        <property
+          android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+          android:value="App usage monitoring for blocking distracting apps" />
+      </service>
+
+      <!-- Accessibility Service for real-time app detection -->
+      <service
+        android:name=".BlockerAccessibilityService"
+        android:enabled="true"
+        android:exported="true"
+        android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+        <intent-filter>
+          <action android:name="android.accessibilityservice.AccessibilityService" />
+        </intent-filter>
+        <meta-data
+          android:name="android.accessibilityservice"
+          android:resource="@xml/accessibility_service_config" />
+      </service>
+
     </application>
 </manifest>

@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 import { schedules } from '../mock/data';
+import { useSession } from '../contexts/SessionContext';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -26,8 +27,11 @@ const DURATION_PRESETS = [
 
 export default function StartSessionModal() {
   const navigation = useNavigation<Nav>();
+  const { startSession } = useSession();
   const [selectedDuration, setSelectedDuration] = useState(25);
-  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(
+    null,
+  );
   const [customHours, setCustomHours] = useState(0);
   const [customMinutes, setCustomMinutes] = useState(30);
   const [showCustom, setShowCustom] = useState(false);
@@ -53,11 +57,8 @@ export default function StartSessionModal() {
   };
 
   const handleStart = () => {
-    // Navigate back and pass the session params via goBack
-    navigation.navigate('MainTabs', {
-      screen: 'Home',
-      startSession: { duration: effectiveDuration, scheduleId: selectedScheduleId },
-    } as any);
+    startSession(effectiveDuration, selectedScheduleId);
+    navigation.goBack(); // Just go back, session is started via context
   };
 
   return (
@@ -69,9 +70,14 @@ export default function StartSessionModal() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Start Session</Text>
-          <Text style={styles.headerSubtitle}>Choose duration and schedule</Text>
+          <Text style={styles.headerSubtitle}>
+            Choose duration and schedule
+          </Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.closeButton}
+        >
           <X size={18} color="#111827" />
         </TouchableOpacity>
       </View>
@@ -83,7 +89,7 @@ export default function StartSessionModal() {
         {/* Duration section */}
         <Text style={styles.sectionLabel}>Duration</Text>
         <View style={styles.durationGrid}>
-          {DURATION_PRESETS.map((preset) => {
+          {DURATION_PRESETS.map(preset => {
             const isSelected =
               preset.minutes !== -1
                 ? !showCustom && selectedDuration === preset.minutes
@@ -91,10 +97,18 @@ export default function StartSessionModal() {
             return (
               <TouchableOpacity
                 key={preset.label}
-                style={[styles.durationPill, isSelected && styles.durationPillSelected]}
+                style={[
+                  styles.durationPill,
+                  isSelected && styles.durationPillSelected,
+                ]}
                 onPress={() => handlePresetPress(preset.minutes)}
               >
-                <Text style={[styles.durationPillText, isSelected && styles.durationPillTextSelected]}>
+                <Text
+                  style={[
+                    styles.durationPillText,
+                    isSelected && styles.durationPillTextSelected,
+                  ]}
+                >
                   {preset.label}
                 </Text>
               </TouchableOpacity>
@@ -113,7 +127,9 @@ export default function StartSessionModal() {
               >
                 <Text style={styles.stepperBtnText}>▲</Text>
               </TouchableOpacity>
-              <Text style={styles.stepperValue}>{String(customHours).padStart(2, '0')}</Text>
+              <Text style={styles.stepperValue}>
+                {String(customHours).padStart(2, '0')}
+              </Text>
               <TouchableOpacity
                 style={styles.stepperBtn}
                 onPress={() => setCustomHours(Math.max(0, customHours - 1))}
@@ -128,11 +144,15 @@ export default function StartSessionModal() {
               <Text style={styles.customUnitLabel}>Minutes</Text>
               <TouchableOpacity
                 style={styles.stepperBtn}
-                onPress={() => setCustomMinutes(Math.min(59, customMinutes + 5))}
+                onPress={() =>
+                  setCustomMinutes(Math.min(59, customMinutes + 5))
+                }
               >
                 <Text style={styles.stepperBtnText}>▲</Text>
               </TouchableOpacity>
-              <Text style={styles.stepperValue}>{String(customMinutes).padStart(2, '0')}</Text>
+              <Text style={styles.stepperValue}>
+                {String(customMinutes).padStart(2, '0')}
+              </Text>
               <TouchableOpacity
                 style={styles.stepperBtn}
                 onPress={() => setCustomMinutes(Math.max(0, customMinutes - 5))}
@@ -146,7 +166,10 @@ export default function StartSessionModal() {
         {/* Schedule section */}
         <Text style={styles.sectionLabel}>Schedule (optional)</Text>
         <TouchableOpacity
-          style={[styles.scheduleRow, selectedScheduleId === null && styles.scheduleRowSelected]}
+          style={[
+            styles.scheduleRow,
+            selectedScheduleId === null && styles.scheduleRowSelected,
+          ]}
           onPress={() => setSelectedScheduleId(null)}
         >
           <View style={styles.scheduleIconBox}>
@@ -159,7 +182,7 @@ export default function StartSessionModal() {
           {selectedScheduleId === null && <View style={styles.selectedDot} />}
         </TouchableOpacity>
 
-        {schedules.map((schedule) => (
+        {schedules.map(schedule => (
           <TouchableOpacity
             key={schedule.id}
             style={[
@@ -177,7 +200,9 @@ export default function StartSessionModal() {
                 {schedule.startTime} – {schedule.endTime}
               </Text>
             </View>
-            {selectedScheduleId === schedule.id && <View style={styles.selectedDot} />}
+            {selectedScheduleId === schedule.id && (
+              <View style={styles.selectedDot} />
+            )}
           </TouchableOpacity>
         ))}
       </ScrollView>

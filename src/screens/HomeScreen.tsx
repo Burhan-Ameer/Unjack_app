@@ -1,7 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, StyleSheet } from 'react-native';
-import { Clock, Zap, TrendingUp } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
+import { Clock, Zap } from 'lucide-react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -11,6 +18,7 @@ import { FriendRow } from '../components/FriendRow';
 import { StatCard } from '../components/StatCard';
 
 import { friends, stats, userProfile } from '../mock/data';
+import { useSession } from '../contexts/SessionContext';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -23,40 +31,56 @@ function formatSeconds(totalSeconds: number): string {
 
 export default function HomeScreen() {
   const navigation = useNavigation<Nav>();
-  const [isSessionActive, setIsSessionActive] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    if (isSessionActive) {
-      setElapsedSeconds(0);
-      intervalRef.current = setInterval(() => {
-        setElapsedSeconds(prev => prev + 1);
-      }, 1000);
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isSessionActive]);
+  const { session, resetSession } = useSession();
 
   const handleStartSession = () => {
     navigation.navigate('StartSession');
   };
 
-  const handleEndSession = () => {
+  const handleEndSession = useCallback(() => {
+    const duration = formatSeconds(session.elapsedSeconds);
     navigation.navigate('EndSession', {
-      duration: formatSeconds(elapsedSeconds),
+      duration,
       appsBlocked: 3,
       sessionName: 'Focus Session',
     });
-    setIsSessionActive(false);
-  };
+    resetSession();
+  }, [navigation, session.elapsedSeconds, resetSession]);
+
+  // Handle navigation params for starting session
+  useFocusEffect(
+    React.useCallback(() => {
+      const unsubscribe = navigation.addListener('focus', () => {
+        // Check if we have params from StartSessionModal
+        // Since navigation params are not directly accessible here,
+        // we need to handle it differently. For now, assume startSessionDirectly is called.
+      });
+      return unsubscribe;
+    }, [navigation]),
+  );
+
+  // Auto-end session when time is up
+  useEffect(() => {
+    if (
+      !session.isActive &&
+      session.elapsedSeconds >= session.targetDuration &&
+      session.targetDuration > 0
+    ) {
+      // Session just ended
+      handleEndSession();
+    }
+  }, [
+    session.isActive,
+    session.elapsedSeconds,
+    session.targetDuration,
+    handleEndSession,
+  ]);
 
   // Called when returning from StartSessionModal with a confirmed start
-  // (In production this would use a global state/context; here we just start immediately)
-  const startSessionDirectly = () => setIsSessionActive(true);
+  // In production, this would be handled via navigation params or global state
+  // const startSessionDirectly = (duration: number, scheduleId?: string | null) => {
+  //   startSession(duration, scheduleId);
+  // };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -76,9 +100,13 @@ export default function HomeScreen() {
         </View>
 
         <ActiveSessionCard
-          isActive={isSessionActive}
+          isActive={session.isActive}
           sessionName="Focus Session"
-          duration={isSessionActive ? formatSeconds(elapsedSeconds) : '00:00:00'}
+          duration={
+            session.isActive
+              ? formatSeconds(session.targetDuration - session.elapsedSeconds)
+              : '00:00:00'
+          }
           onStartSession={handleStartSession}
           onEndSession={handleEndSession}
         />
@@ -102,13 +130,15 @@ export default function HomeScreen() {
         {/* Friends card */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Friends</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Leaderboard' as any)}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Leaderboard' as any)}
+          >
             <Text style={styles.seeAllText}>See all →</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.friendsCard}>
-          {friends.slice(0, 3).map((friend) => (
+          {friends.slice(0, 3).map(friend => (
             <FriendRow
               key={friend.id}
               avatar={friend.avatar}

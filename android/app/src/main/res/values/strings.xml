@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Unjack</string>
+    <string name="accessibility_service_description">Unjack uses accessibility service to detect when you open blocked apps and help you stay focused by showing a blocking screen.</string>
 </resources>

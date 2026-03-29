@@ -72,7 +72,7 @@ export default function NotificationsScreen() {
 }
 
 function NotifRow({ item }: { item: typeof notifications[0] }) {
-  const meta = TYPE_META[item.type] ?? TYPE_META['weekly_summary'];
+  const meta = TYPE_META[item.type] ?? TYPE_META.weekly_summary;
   const Icon = meta.icon;
 
   return (
